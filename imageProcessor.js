@@ -50,8 +50,6 @@ function generateImageFromJson(props, tmpl_id, cb) {
 
     const certJson = getCertJson(tmpl_id);
 
-    console.log(certJson)
-
     Jimp.read(certJson.certificate_template)
         .then(image => {
 
