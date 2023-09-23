@@ -1,6 +1,8 @@
 const express = require('express')
 const bodyParser = require('body-parser')
 const imageProcessor = require('./imageProcessor.js');
+const { genPDF } = require('./genPdf.js');
+const path = require("path");
 
 const app = express()
 
@@ -12,6 +14,7 @@ app.use(function (req, res, next) {
   next();
 });
 
+app.use(express.static('public'));
 app.use(express.static('outputImage'));
 
 app.get('/', function (req, res) {
@@ -31,6 +34,38 @@ app.get('/generateCertificate', function (req, res) {
 
   })
 
+})
+
+app.get('/genCert', async function (req, res) {
+
+  try {
+
+    let { name, response } = req.query;
+
+    if (!name) {
+      return res.status(400).json({ success: false, message: "Name is Required" });
+    }
+
+    const { resultURL, resultImgURL } = await genPDF({ name });
+
+    if (response === "json") {
+      return res.json({
+        success: true, data: {
+          resultURL:
+            new URL(`${req.protocol}://${req.get("host")}${resultURL}`),
+          resultImgURL:
+            new URL(`${req.protocol}://${req.get("host")}${resultURL}`)
+        }
+      })
+    } if (response === "image") {
+      return res.sendFile(path.join("./public", resultImgURL), { root: __dirname });
+    } else {
+      return res.sendFile(path.join("./public", resultURL), { root: __dirname });
+    }
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: err.message || "Internal Server Error" });
+  }
 })
 
 const server = app.listen(5000, "127.0.0.1", () => {
